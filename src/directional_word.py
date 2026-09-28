@@ -2,11 +2,6 @@ from .geometry import *
 
 class DirectionalWord:
     def __init__(self, sequence):
-        if not all(isinstance(direction, Direction) for direction in sequence):
-            raise TypeError(
-                "Every element of the directional word must be a Direction."
-            )
-        
         self.sequence = tuple(sequence)
 
     @property
