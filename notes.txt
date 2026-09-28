@@ -1,0 +1,67 @@
+% ------ Defining the class of coordinates. -------------------------------------
+Attributes:
+- X
+- y
+
+
+% ------ Defining the class of directions. -------------------------------------
+Attributes:
+- N,
+- S,
+- E,
+- W
+
+
+% ------ Defining the class of edges. ------------------------------------------
+Attributes:
+- orientation: 0 = horizontal, 1 = vertical
+- x
+- y
+
+0: (x,y) to (x+1,y)
+1: (x,y) to (x,y+1)
+
+
+% ------ Defining the class of directional words. -----------------------------------------
+Attributes:
+- weight
+
+Methods:
+- inverse()
+- edges() 
+- displacement_vectors()
+
+
+% ------ Defining the class of tiles. ----------------------------------------------------
+Attributes:
+- ordered_edges: tuple[Edge, ...]
+- support: frozenset[Edge]
+- B: int
+- type: X or Z
+
+
+% ------ Defining the class of pair of tiles. ----------------------------------------------------
+Attributes:
+- X_tile
+- Y_tile
+
+Methods: 
+- check_mutual_condition()
+- check_parity()
+- check(): check_mutual_condition() and check_parity()
+
+
+% ------ Defining the class of directional tile codes. --------------------------
+Attribute:
+- M: int
+- N: int
+- directional tile pairs
+
+
+Cosa fare:
+- build X-tile and Z-tile: sequence of edges
+- compute B from X-tile
+- check tile compatibility --> mutual condition, parity condition
+- build anchors'grid: a (M + 2(B-1))x(N + 2(B-1)) grid
+- define bulk, z-boundary, x-boundary mask
+- perform pruning
