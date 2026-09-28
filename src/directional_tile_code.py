@@ -5,9 +5,6 @@ from .directional_word import DirectionalWord
 
 class DirTileCode:
     def __init__(self, M: int, N: int, word: DirectionalWord):
-        if M <= 0 or N <= 0:
-            raise ValueError("M and N must be positive.")
-
         self.M = M
         self.N = N
         self.word = word
