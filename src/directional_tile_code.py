@@ -19,8 +19,7 @@ class DirTileCode:
     @property
     def bulk_mask(self):
         p = self.padding
-
-        mask = self._empty_anchor_mask()
+        mask = self.empty_anchor_mask()
         mask[p:p + self.M, p:p + self.N] = True
 
         return mask
@@ -28,8 +27,7 @@ class DirTileCode:
     @property
     def x_boundary_mask(self):
         p = self.padding
-        mask = self._empty_anchor_mask()
-
+        mask = self.empty_anchor_mask()
         mask[p:p + self.M, :p] = True
         mask[p:p + self.M, p + self.N:] = True
 
@@ -38,8 +36,7 @@ class DirTileCode:
     @property
     def z_boundary_mask(self):
         p = self.padding
-        mask = self._empty_anchor_mask()
-
+        mask = self.empty_anchor_mask()
         mask[:p, p:p + self.N] = True
         mask[p + self.M:, p:p + self.N] = True
 

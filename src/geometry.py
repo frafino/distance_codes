@@ -12,13 +12,6 @@ class Vertex:
     def add(self, vertex: "Vertex") -> "Vertex":
         return Vertex(self.x + vertex.x, self.y + vertex.y)
 
-    @property
-    def primal(self) -> "Vertex":
-        return Vertex(2 * self.x, 2 * self.y)
-
-    @property
-    def dual(self) -> "Vertex":
-        return self.primal.add(Vertex(1, -1))
 
 class Direction(Enum):
     N = (0, 2)
@@ -60,11 +53,7 @@ class Edge:
 
     @classmethod
     def between(cls, vertex_1: Vertex, vertex_2: Vertex) -> "Edge":
-        dx = vertex_2.x - vertex_1.x
         dy = vertex_2.y - vertex_1.y
-
-        if abs(dx) + abs(dy) != 2: 
-            raise ValueError("The two vertices are not neighbours.")
         
         if dy == 0:
             origin = Vertex(min(vertex_1.x, vertex_2.x), vertex_1.y)
@@ -82,3 +71,13 @@ class Edge:
 
     def translated(self, offset: Vertex) -> "Edge":
         return Edge(self.origin.add(offset), self.orientation)
+
+
+    def perpendicular(self) -> "Edge":
+        if self.orientation is Orientation.HORIZONTAL:
+            origin = self.origin.add(Vertex(1, -1))
+            orientation = Orientation.VERTICAL
+        else:
+            origin = self.origin.add(Vertex(-1, 1)) 
+            orientation = Orientation.HORIZONTAL
+        return Edge(origin, orientation)
