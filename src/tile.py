@@ -43,12 +43,12 @@ class Tile():
                    and e.origin.x % 2 == 0 and e.origin.y % 2 == 0
                    for e in self.get_edges())
     
-    @classmethod
+    @staticmethod
     def check_mutuality(x_tile: "Tile", z_tile: "Tile") -> bool:
         return (x_tile.B == z_tile.B and x_tile.fits_box() and z_tile.fits_box()
                 and set(x_tile.mutual_z_edges()) == set(z_tile.get_z_edges()))
 
-    @classmethod
+    @staticmethod
     def check_parity(x_tile: "Tile") -> bool:
         if x_tile.type is not TileType.X:
             raise ValueError("The parity test uses the ordered X string.")
@@ -59,7 +59,8 @@ class Tile():
                 dx, dy = end.x - start.x, end.y - start.y
                 if dy % 2:
                     counts[(dx, dy)] += 1
-        return all(count % 2 == 0 for count in Tile.parity_counts(x_tile).values())
+        return all(count % 2 == 0 for count in counts.values())
 
+    @staticmethod
     def check(x_tile: "Tile", z_tile: "Tile") -> bool:
         return Tile.check_mutuality(x_tile, z_tile) and Tile.check_parity(x_tile)

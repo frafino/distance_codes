@@ -1,14 +1,14 @@
 from .geometry import *
 
 class DirectionalWord:
-    def __init__(self, sequence):
-        if isinstance(sequence, str):
+    def __init__(self, word):
+        if isinstance(word, str):
             try:
-                sequence = tuple(Direction[c] for c in sequence.upper())
+                word = tuple(Direction[c] for c in word.upper())
             except KeyError as exc:
                 raise ValueError(":( Use only N, E, S, W.")
 
-        self.sequence = tuple(sequence)
+        self.word = tuple(word)
 
         edges = self.get_x_edges()
         if len(set(edges)) != len(edges):
@@ -16,11 +16,11 @@ class DirectionalWord:
 
     @property
     def weight(self) -> int:
-        return len(self.sequence)
+        return len(self.word)
 
     def inverse(self) -> "DirectionalWord":
-        inverse_sequence = tuple(direction.opposite for direction in reversed(self.sequence))
-        return DirectionalWord(inverse_sequence)
+        inverse_word = tuple(direction.opposite for direction in reversed(self.word))
+        return DirectionalWord(inverse_word)
 
     def get_x_edges(self) -> tuple[Edge, ...]:
         x_edges = []
