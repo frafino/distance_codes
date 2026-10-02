@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from collections import defaultdict
 import matplotlib.pyplot as plt
 import numpy as np
 
-from geometry import Edge, Vertex, Orientation
-from tile import TileType
+from .geometry import Edge, Vertex, Orientation
+from .tile import TileType
 
 
 X_COLOR = "#F2C94C"

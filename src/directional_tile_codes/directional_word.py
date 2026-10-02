@@ -1,4 +1,4 @@
-from geometry import *
+from .geometry import Direction, Edge, Vertex
 
 class DirectionalWord:
     def __init__(self, word):

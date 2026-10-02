@@ -1,0 +1,12 @@
+pyproject.toml
+src/directional_tile_codes/__init__.py
+src/directional_tile_codes/directional_tile_code.py
+src/directional_tile_codes/directional_word.py
+src/directional_tile_codes/geometry.py
+src/directional_tile_codes/tile.py
+src/directional_tile_codes/visualize.py
+src/directional_tile_codes.egg-info/PKG-INFO
+src/directional_tile_codes.egg-info/SOURCES.txt
+src/directional_tile_codes.egg-info/dependency_links.txt
+src/directional_tile_codes.egg-info/requires.txt
+src/directional_tile_codes.egg-info/top_level.txt

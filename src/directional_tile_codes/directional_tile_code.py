@@ -1,8 +1,8 @@
 import numpy as np
 
-from directional_word import DirectionalWord
-from tile import Tile, TileType
-from geometry import Edge, Vertex, Orientation
+from .directional_word import DirectionalWord
+from .tile import Tile, TileType
+from .geometry import Edge, Vertex, Orientation
 
 
 class DirTileCode:
