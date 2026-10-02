@@ -92,13 +92,13 @@ class DirTileCode:
         indices = {edge: i for i, edge in enumerate(data)}
 
         def matrix(checks):
-            result = np.zeros((len(checks), len(data)), dtype=np.uint8)
+            result = np.zeros((len(checks), len(data))) # change type (?), galois package
             for row, support in enumerate(checks.values()):
                 for edge in support:
                     result[row, indices[edge]] = 1
             return result
 
         hx, hz = matrix(x_checks), matrix(z_checks)
-        if np.any((hx.astype(np.int64) @ hz.astype(np.int64).T) % 2):
+        if np.any((hx @ hz.T) % 2):
             raise ValueError("Constructed patch has anticommuting X/Z checks.")
         return hx, hz
