@@ -1,8 +1,8 @@
 from enum import Enum
 from collections import Counter
 
-from .directional_word import DirectionalWord
-from .geometry import Edge, Vertex
+from directional_word import DirectionalWord
+from geometry import Edge, Vertex
 
 
 class TileType(Enum):

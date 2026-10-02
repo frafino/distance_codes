@@ -1,8 +1,8 @@
 import numpy as np
 
-from .directional_word import DirectionalWord
-from .tile import Tile, TileType
-from .geometry import Edge, Vertex, Orientation
+from directional_word import DirectionalWord
+from tile import Tile, TileType
+from geometry import Edge, Vertex, Orientation
 
 
 class DirTileCode:
@@ -56,6 +56,12 @@ class DirTileCode:
     def z_anchor_mask(self):
         return self.bulk_mask | self.z_boundary_mask
 
+    @property
+    def layout(self):
+        width = self.M + self.B - 1
+        height = self.N + self.B - 1
+        return {Edge(Vertex(2 * x, 2 * y), orientation) for x in range(width) for y in range(height) for orientation in Orientation}
+
     def tessellate(self, tile, mask, layout):
         checks = {}
         for i, j in np.argwhere(mask):
@@ -73,12 +79,8 @@ class DirTileCode:
         }
 
     def build_checks(self):
-        width = self.M + self.B - 1
-        height = self.N + self.B - 1
-        layout = {Edge(Vertex(2 * x, 2 * y), orientation) for x in range(width) for y in range(height) for orientation in Orientation}
-
-        x_checks = self.tessellate(self.x_tile, self.x_anchor_mask, layout)
-        z_checks = self.tessellate(self.z_tile, self.z_anchor_mask, layout)
+        x_checks = self.tessellate(self.x_tile, self.x_anchor_mask, self.layout)
+        z_checks = self.tessellate(self.z_tile, self.z_anchor_mask, self.layout)
         
         data = set().union(*x_checks.values()) & set().union(*z_checks.values())
 
