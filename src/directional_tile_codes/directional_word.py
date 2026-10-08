@@ -53,7 +53,6 @@ class DirectionalWord:
     
     @property
     def B(self):
-        # I am returning it as the paper convention, not in the full lattice
         edges = self.get_x_edges() + self.get_z_edges()
         max_hor = max(edge.origin.x for edge in edges)
         max_ver = max(edge.origin.y for edge in edges)

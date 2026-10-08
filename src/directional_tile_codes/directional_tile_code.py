@@ -1,4 +1,5 @@
 import numpy as np
+import galois
 
 from .directional_word import DirectionalWord
 from .tile import Tile, TileType
@@ -18,6 +19,7 @@ class DirTileCode:
         self.B = word.B
         self.padding = self.B - 1
         self.anchor_shape = (self.M + 2 * self.padding, self.N + 2 * self.padding)
+        self.logical_ops = []
 
     def empty_anchor_mask(self):
         return np.zeros(self.anchor_shape, dtype=bool)
@@ -92,13 +94,44 @@ class DirTileCode:
         indices = {edge: i for i, edge in enumerate(data)}
 
         def matrix(checks):
-            result = np.zeros((len(checks), len(data))) # change type (?), galois package
+            result = galois.GF(2).Zeros((len(checks), len(data)))
+
             for row, support in enumerate(checks.values()):
                 for edge in support:
                     result[row, indices[edge]] = 1
+
             return result
 
-        hx, hz = matrix(x_checks), matrix(z_checks)
-        if np.any((hx @ hz.T) % 2):
+        h_x, h_z = matrix(x_checks), matrix(z_checks)
+
+        if np.any(h_x @ h_z.T):
             raise ValueError("Constructed patch has anticommuting X/Z checks.")
-        return hx, hz
+
+        return h_x, h_z
+
+    def logical_to_edges(self, logical):
+        data, _, _ = self.build_checks()
+        logical = np.asarray(logical)
+        n = len(data)
+
+        if logical.ndim != 1:
+            raise ValueError("Pass one logical operator at a time.")
+
+        if logical.size == 2 * n:
+            support = (logical[:n] != 0) | (logical[n:] != 0)
+        elif logical.size == n:
+            support = logical != 0
+        else:
+            raise ValueError(
+                f"Expected {n} or {2 * n} entries, got {logical.size}."
+            )
+
+        return tuple(data[i] for i in np.flatnonzero(support))
+
+    def add_logical_op(self, logical):
+        self.logical_ops.append(self.logical_to_edges(logical))
+
+    @property
+    def n(self):
+        data, _, _ = self.build_checks()
+        return len(data)

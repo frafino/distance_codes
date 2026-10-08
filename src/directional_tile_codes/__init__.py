@@ -9,4 +9,5 @@ from .visualize import (
     plot_support_before_prune,
     plot_support_after_prune,
     print_visualization_summary,
+    plot_logical_operator,
 )

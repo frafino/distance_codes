@@ -10,6 +10,7 @@ from .tile import TileType
 X_COLOR = "#F2C94C"
 Z_COLOR = "#1687D9"
 BOTH_COLOR = "#22BD25"
+LOGICAL_COLOR = "#9B51E0"
 GRID_COLOR = "0.82"
 LAYOUT_COLOR = "0.45"
 
@@ -216,6 +217,105 @@ def plot_z_tile(code_or_tile, *, ax=None, title="Z tile"):
 
 
 # ---------------------------------------------------------------------------
+# Edge sequences and logical operators
+# ---------------------------------------------------------------------------
+
+def plot_edges(
+    edges,
+    *,
+    B=None,
+    layout=None,
+    ax=None,
+    title="Edge support",
+    color=LOGICAL_COLOR,
+    lw=3.5,
+    shift=(0, 0),
+):
+    """Plot an iterable of Edge objects, using the same coordinates as tiles.
+
+    B adds the same square background as a tile plot. Alternatively, layout
+    supplies an iterable of background edges (for example, code.layout).
+    Edges need not be connected; no segments are added between them. Repeated
+    edges are drawn once, without applying Pauli cancellation rules.
+
+    Coordinates are preserved unless an explicit display shift is supplied.
+    Returns the Matplotlib Axes, like plot_x_tile and plot_z_tile.
+    """
+    if B is not None and layout is not None:
+        raise ValueError("Supply either B or layout, not both.")
+
+    edges = tuple(dict.fromkeys(edges))
+    background = (
+        _tile_background_edges(B) if B is not None
+        else tuple(layout) if layout is not None
+        else ()
+    )
+
+    if ax is None:
+        _, ax = plt.subplots(figsize=(5, 5))
+
+    if B is not None:
+        for edge in background:
+            _draw_edge(ax, edge, GRID_COLOR, shift=shift, lw=0.9, zorder=0)
+    else:
+        _draw_layout(ax, background, shift=shift)
+
+    for edge in edges:
+        _draw_edge(ax, edge, color, shift=shift, lw=lw, zorder=8)
+
+    _format_axes(ax, set(background) | set(edges), shift=shift, title=title)
+    return ax
+
+
+def plot_logical_operator(
+    edges,
+    *,
+    code,
+    ax=None,
+    title="Logical Operator",
+    lw=3.5,
+):
+    if ax is None:
+        _, ax = plt.subplots(figsize=(7, 7))
+
+    layout = tuple(code.layout)
+
+    all_anchors = (
+        _mask_anchors(code, code.bulk_mask)
+        | _mask_anchors(code, code.x_boundary_mask)
+        | _mask_anchors(code, code.z_boundary_mask)
+    )
+    shift = _display_shift(layout, all_anchors)
+
+    _draw_layout(ax, layout, shift=shift)
+
+    for edge in dict.fromkeys(edges):
+        _draw_edge(
+            ax, edge, LOGICAL_COLOR,
+            shift=shift, lw=lw, zorder=8,
+        )
+
+    _format_axes(
+        ax, layout, all_anchors,
+        shift=shift, title=title,
+    )
+
+    xmin, xmax, ymin, ymax = _support_bounds(layout, all_anchors)
+    ax.set_xticks(range(int(xmin + shift[0]), int(xmax + shift[0]) + 1))
+    ax.set_yticks(range(int(ymin + shift[1]), int(ymax + shift[1]) + 1))
+
+    ax.grid(
+        True,
+        linestyle=":",
+        linewidth=0.6,
+        alpha=0.7,
+        zorder=0,
+    )
+
+    return ax
+
+
+# ---------------------------------------------------------------------------
 # Anchor plot
 # ---------------------------------------------------------------------------
 
@@ -233,7 +333,7 @@ def _mask_anchors(code, mask):
     return result
 
 
-def plot_anchors(code, *, ax=None, title="Tile anchors"):
+def plot_anchors(code, *, ax=None, title="Tile Anchors"):
     if ax is None:
         _, ax = plt.subplots(figsize=(7, 7))
 
@@ -353,7 +453,7 @@ def plot_support_before_prune(
     code,
     *,
     ax=None,
-    title="Support before pruning",
+    title="Support Before Pruning",
     show_checks=True,
 ):
     if ax is None:
@@ -410,7 +510,7 @@ def plot_support_after_prune(
     code,
     *,
     ax=None,
-    title="Support after pruning",
+    title="Support After Pruning",
     show_checks=True,
 ):
     if ax is None:
