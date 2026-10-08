@@ -134,7 +134,7 @@ class DirTileCode:
         )
 
     @property
-    def num_physical_qubits(self):
+    def num_check_qubits(self):
         data, _, _ = self.build_checks()
         return len(data)
 
@@ -148,6 +148,18 @@ class DirTileCode:
         h_x, h_z = self.parity_check_matrices()
         return CSSCode(code_x=h_x, code_z=h_z)
 
-    def get_distance_exact(self):
+    @property
+    def distance_exact(self):
         css_code = self.to_css_code()
         return css_code.get_distance_exact()
+
+    @property
+    def distance_x(self):
+        css_code = self.to_css_code()
+        return css_code.get_distance_exact("X")
+
+    @property
+    def distance_z(self):
+        css_code = self.to_css_code()
+        return css_code.get_distance_exact("Z")
+    
