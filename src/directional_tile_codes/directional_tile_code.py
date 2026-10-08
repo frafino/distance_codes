@@ -1,5 +1,6 @@
 import numpy as np
 import galois
+from qldpc.codes import CSSCode
 
 from .directional_word import DirectionalWord
 from .tile import Tile, TileType
@@ -19,7 +20,6 @@ class DirTileCode:
         self.B = word.B
         self.padding = self.B - 1
         self.anchor_shape = (self.M + 2 * self.padding, self.N + 2 * self.padding)
-        self.logical_ops = []
 
     def empty_anchor_mask(self):
         return np.zeros(self.anchor_shape, dtype=bool)
@@ -109,29 +109,45 @@ class DirTileCode:
 
         return h_x, h_z
 
-    def logical_to_edges(self, logical):
+    @property
+    def logical_ops(self):
         data, _, _ = self.build_checks()
-        logical = np.asarray(logical)
+        css_code = self.to_css_code()
+        logicals = np.asarray(css_code.get_logical_ops())
         n = len(data)
 
-        if logical.ndim != 1:
-            raise ValueError("Pass one logical operator at a time.")
+        if logicals.ndim == 1:
+            logicals = logicals[np.newaxis, :]
 
-        if logical.size == 2 * n:
-            support = (logical[:n] != 0) | (logical[n:] != 0)
-        elif logical.size == n:
-            support = logical != 0
+        if logicals.shape[1] == 2 * n:
+            supports = (logicals[:, :n] != 0) | (logicals[:, n:] != 0)
+        elif logicals.shape[1] == n:
+            supports = logicals != 0
         else:
             raise ValueError(
-                f"Expected {n} or {2 * n} entries, got {logical.size}."
+                f"Expected {n} or {2 * n} entries per logical operator, got {logicals.shape[1]}."
             )
 
-        return tuple(data[i] for i in np.flatnonzero(support))
-
-    def add_logical_op(self, logical):
-        self.logical_ops.append(self.logical_to_edges(logical))
+        return tuple(
+            tuple(data[i] for i in np.flatnonzero(support))
+            for support in supports
+        )
 
     @property
-    def n(self):
+    def num_physical_qubits(self):
         data, _, _ = self.build_checks()
         return len(data)
+
+    @property
+    def num_logical_qubits(self):
+        css_code = self.to_css_code()
+        rank = css_code.rank
+        return self.num_physical_qubits - rank
+
+    def to_css_code(self):
+        h_x, h_z = self.parity_check_matrices()
+        return CSSCode(code_x=h_x, code_z=h_z)
+
+    def get_distance_exact(self):
+        css_code = self.to_css_code()
+        return css_code.get_distance_exact()
