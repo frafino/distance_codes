@@ -142,7 +142,7 @@ class DirTileCode:
     def num_logical_qubits(self):
         css_code = self.to_css_code()
         rank = css_code.rank
-        return self.num_physical_qubits - rank
+        return self.num_check_qubits - rank
 
     def to_css_code(self):
         h_x, h_z = self.parity_check_matrices()
