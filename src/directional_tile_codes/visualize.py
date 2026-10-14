@@ -21,16 +21,16 @@ LAYOUT_COLOR = "0.45"
 
 def _vertex_xy(v: Vertex, shift=(0, 0)):
     sx, sy = shift
-    return v.x / 2 + sx, v.y / 2 + sy
+    return v.x + sx, v.y + sy
 
 
 def _edge_xy(edge: Edge, shift=(0, 0)):
     x, y = _vertex_xy(edge.origin, shift)
 
     if edge.orientation is Orientation.HORIZONTAL:
-        return (x, y), (x + 1, y)
+        return (x, y), (x + 2, y)
 
-    return (x, y), (x, y + 1)
+    return (x, y), (x, y + 2)
 
 
 def _support_bounds(edges, anchors=()):
@@ -122,10 +122,11 @@ def _draw_support_sets(ax, x_edges, z_edges, *, shift=(0, 0), lw=3.0):
         _draw_edge(ax, edge, BOTH_COLOR, shift=shift, lw=lw, zorder=5)
 
 
-def _draw_checks(ax, x_checks, z_checks, *, shift=(0, 0), size=50):
-    x_anchors = set(x_checks)
-    z_anchors = set(z_checks)
-    both = x_anchors & z_anchors
+def _draw_checks(ax, x_positions, z_positions, *, shift=(0, 0), size=50):
+    """Draw physical check positions, not abstract tessellation anchors."""
+    x_positions = set(x_positions)
+    z_positions = set(z_positions)
+    both = x_positions & z_positions
 
     def scatter(vertices, color, label):
         if not vertices:
@@ -143,8 +144,8 @@ def _draw_checks(ax, x_checks, z_checks, *, shift=(0, 0), size=50):
             zorder=7,
         )
 
-    scatter(x_anchors - both, X_COLOR, "X check")
-    scatter(z_anchors - both, Z_COLOR, "Z check")
+    scatter(x_positions - both, X_COLOR, "X check")
+    scatter(z_positions - both, Z_COLOR, "Z check")
     scatter(both, BOTH_COLOR, "X & Z checks")
 
 
@@ -172,7 +173,7 @@ def _tile_background_edges(B):
 
 def _plot_tile(tile, *, ax=None, title=None):
     """
-    Plot one existing Tile support using tile.get_edges().
+    Plot one existing Tile support using tile.edges.
     """
     if ax is None:
         _, ax = plt.subplots(figsize=(5, 5))
@@ -184,12 +185,10 @@ def _plot_tile(tile, *, ax=None, title=None):
 
     color = X_COLOR if tile.type is TileType.X else Z_COLOR
 
-    for edge in tile.get_edges():
+    for edge in tile.edges:
         _draw_edge(ax, edge, color, lw=3.5, zorder=4)
 
-    ax.scatter([0], [0], s=55, color=color, zorder=6)
-
-    all_edges = set(background) | set(tile.get_edges())
+    all_edges = set(background) | set(tile.edges)
     _format_axes(
         ax,
         all_edges,
@@ -421,9 +420,10 @@ def full_support_before_layout_restriction(code):
             2 * (int(i) - code.padding),
             2 * (int(j) - code.padding),
         )
+        x_tile_edges = code.x_tile.edges
         x_checks[anchor] = tuple(
             edge.translated(anchor)
-            for edge in code.x_tile.get_edges()
+            for edge in x_tile_edges
         )
 
     for i, j in np.argwhere(code.z_anchor_mask):
@@ -431,9 +431,10 @@ def full_support_before_layout_restriction(code):
             2 * (int(i) - code.padding),
             2 * (int(j) - code.padding),
         )
+        z_tile_edges = code.z_tile.edges
         z_checks[anchor] = tuple(
             edge.translated(anchor)
-            for edge in code.z_tile.get_edges()
+            for edge in z_tile_edges
         )
 
     return x_checks, z_checks
@@ -448,6 +449,13 @@ def _union_support(checks):
 # ---------------------------------------------------------------------------
 # Support visualizations
 # ---------------------------------------------------------------------------
+
+def _physical_check_positions(code, x_checks, z_checks):
+    """Translate local X/Z check offsets by their tessellation anchors."""
+    x_positions = {anchor.add(code.x_tile.check_qubit) for anchor in x_checks}
+    z_positions = {anchor.add(code.z_tile.check_qubit) for anchor in z_checks}
+    return x_positions, z_positions
+
 
 def plot_support_before_prune(
     code,
@@ -465,7 +473,8 @@ def plot_support_before_prune(
     z_support = _union_support(z_checks)
 
     all_edges = set(code.layout) | x_support | z_support
-    all_anchors = set(x_checks) | set(z_checks)
+    x_positions, z_positions = _physical_check_positions(code, x_checks, z_checks)
+    all_anchors = x_positions | z_positions
 
     shift = _display_shift(all_edges, all_anchors)
 
@@ -473,7 +482,7 @@ def plot_support_before_prune(
     _draw_support_sets(ax, x_support, z_support, shift=shift)
 
     if show_checks:
-        _draw_checks(ax, x_checks, z_checks, shift=shift)
+        _draw_checks(ax, x_positions, z_positions, shift=shift)
 
     _format_axes(
         ax,
@@ -522,7 +531,8 @@ def plot_support_after_prune(
     z_support = _union_support(z_checks)
 
     all_edges = set(code.layout) | set(data) | x_support | z_support
-    all_anchors = set(x_checks) | set(z_checks)
+    x_positions, z_positions = _physical_check_positions(code, x_checks, z_checks)
+    all_anchors = x_positions | z_positions
 
     shift = _display_shift(all_edges, all_anchors)
 
@@ -530,7 +540,7 @@ def plot_support_after_prune(
     _draw_support_sets(ax, x_support, z_support, shift=shift)
 
     if show_checks:
-        _draw_checks(ax, x_checks, z_checks, shift=shift)
+        _draw_checks(ax, x_positions, z_positions, shift=shift)
 
     _format_axes(
         ax,

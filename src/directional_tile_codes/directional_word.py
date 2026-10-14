@@ -1,11 +1,13 @@
 from .geometry import Direction, Edge, Vertex
 
+# TODO: Check if it makes sense to have get_x_edges like in Tile.
+
 class DirectionalWord:
     def __init__(self, word):
         if isinstance(word, str):
             try:
                 word = tuple(Direction[c] for c in word.upper())
-            except KeyError as exc:
+            except KeyError:
                 raise ValueError(":( Use only N, E, S, W.")
 
         self.word = tuple(word)

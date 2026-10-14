@@ -75,7 +75,7 @@ class DirTileCode:
         checks = {}
         for i, j in np.argwhere(mask):
             anchor = Vertex(2 * (int(i) - self.padding), 2 * (int(j) - self.padding))
-            all_edges = tuple(edge.translated(anchor) for edge in tile.get_edges())
+            all_edges = tuple(edge.translated(anchor) for edge in tile.edges)
             checks[anchor] = tuple([edge for edge in all_edges if edge in layout])
         return checks
 
