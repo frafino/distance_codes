@@ -30,6 +30,9 @@ class DirTileCode:
         self.anchor_shape = (self.M + 2 * self.padding, self.N + 2 * self.padding)
 
     # Layout definition
+    def empty_mask(self):
+        return np.zeros(self.anchor_shape, dtype=bool)
+    
     @cached_property
     def bulk_mask(self):
         p = self.padding
@@ -87,7 +90,7 @@ class DirTileCode:
         }
 
     @cached_property
-    def checks(self):
+    def parity_checks(self):
         x_checks = self.tessellate(self.x_tile, self.x_anchor_mask, self.layout)
         z_checks = self.tessellate(self.z_tile, self.z_anchor_mask, self.layout)
         
@@ -123,6 +126,26 @@ class DirTileCode:
         return CSSCode(code_x=h_x, code_z=h_z)
 
     # Code parameters
+    @cached_property
+    def x_check_qubits(self):
+        _, x_checks, _ = self.parity_checks
+        return {
+            anchor.add(self.x_tile.check_qubit)
+            for anchor in x_checks
+        }
+
+    @cached_property
+    def z_check_qubits(self):
+        _, _, z_checks = self.parity_checks
+        return {
+            anchor.add(self.z_tile.check_qubit)
+            for anchor in z_checks
+        }
+
+    @cached_property
+    def check_qubits(self):
+        return self.x_check_qubits | self.z_check_qubits
+
     @property
     def num_data_qubits(self):
         data, _, _ = self.checks
