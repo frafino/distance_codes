@@ -1,10 +1,18 @@
 import numpy as np
 import galois
 from qldpc.codes import CSSCode
+from functools import cached_property
 
 from .directional_word import DirectionalWord
 from .tile import Tile, TileType
 from .geometry import Edge, Vertex, Orientation
+from .visualize import (
+    plot_x_tile,
+    plot_z_tile,
+    plot_anchors,
+    plot_support_before_prune,
+    plot_support_after_prune,
+)
 
 
 class DirTileCode:
@@ -21,56 +29,54 @@ class DirTileCode:
         self.padding = self.B - 1
         self.anchor_shape = (self.M + 2 * self.padding, self.N + 2 * self.padding)
 
-    def empty_anchor_mask(self):
-        return np.zeros(self.anchor_shape, dtype=bool)
-
-    @property
+    # Layout definition
+    @cached_property
     def bulk_mask(self):
         p = self.padding
-        mask = self.empty_anchor_mask()
+        mask = np.zeros(self.anchor_shape, dtype=bool)
         mask[p:p + self.M, p:p + self.N] = True
 
         return mask
 
-    @property
+    @cached_property
     def x_boundary_mask(self):
         p = self.padding
-        mask = self.empty_anchor_mask()
+        mask = np.zeros(self.anchor_shape, dtype=bool)
         mask[p:p + self.M, :p] = True
         mask[p:p + self.M, p + self.N:] = True
 
         return mask
 
-    @property
+    @cached_property
     def z_boundary_mask(self):
         p = self.padding
-        mask = self.empty_anchor_mask()
+        mask = np.zeros(self.anchor_shape, dtype=bool)
         mask[:p, p:p + self.N] = True
         mask[p + self.M:, p:p + self.N] = True
 
         return mask
 
-    @property
+    @cached_property
     def x_anchor_mask(self):
         return self.bulk_mask | self.x_boundary_mask
 
-    @property
+    @cached_property
     def z_anchor_mask(self):
         return self.bulk_mask | self.z_boundary_mask
 
-    @property
+    @cached_property
     def layout(self):
         width = self.M + self.B - 1
         height = self.N + self.B - 1
         return {Edge(Vertex(2 * x, 2 * y), orientation) for x in range(width) for y in range(height) for orientation in Orientation}
 
+    # Construction
     def tessellate(self, tile, mask, layout):
         checks = {}
         for i, j in np.argwhere(mask):
             anchor = Vertex(2 * (int(i) - self.padding), 2 * (int(j) - self.padding))
             all_edges = tuple(edge.translated(anchor) for edge in tile.get_edges())
-            surviving_edges = set(edge.translated(anchor) for edge in tile.get_edges()) & layout
-            checks[anchor] = tuple([edge for edge in all_edges if edge in surviving_edges])
+            checks[anchor] = tuple([edge for edge in all_edges if edge in layout])
         return checks
 
     def prune(self, checks, data):
@@ -80,7 +86,8 @@ class DirTileCode:
             if any(edge in data for edge in support)
         }
 
-    def build_checks(self):
+    @cached_property
+    def checks(self):
         x_checks = self.tessellate(self.x_tile, self.x_anchor_mask, self.layout)
         z_checks = self.tessellate(self.z_tile, self.z_anchor_mask, self.layout)
         
@@ -89,8 +96,9 @@ class DirTileCode:
         ordered_data = tuple(sorted(data, key=lambda e: (e.origin.x, e.origin.y, e.orientation.value)))
         return ordered_data, self.prune(x_checks, data), self.prune(z_checks, data)
 
+    @cached_property
     def parity_check_matrices(self):
-        data, x_checks, z_checks = self.build_checks()
+        data, x_checks, z_checks = self.checks
         indices = {edge: i for i, edge in enumerate(data)}
 
         def matrix(checks):
@@ -109,11 +117,26 @@ class DirTileCode:
 
         return h_x, h_z
 
+    @cached_property
+    def css_code(self):
+        h_x, h_z = self.parity_check_matrices
+        return CSSCode(code_x=h_x, code_z=h_z)
+
+    # Code parameters
     @property
+    def num_data_qubits(self):
+        data, _, _ = self.checks
+        return len(data)
+
+    @property
+    def num_logical_qubits(self):
+        rank = self.css_code.rank
+        return self.num_data_qubits - rank
+
+    @cached_property
     def logical_ops(self):
-        data, _, _ = self.build_checks()
-        css_code = self.to_css_code()
-        logicals = np.asarray(css_code.get_logical_ops())
+        data, _, _ = self.checks
+        logicals = np.asarray(self.css_code.get_logical_ops())
         n = len(data)
 
         if logicals.ndim == 1:
@@ -133,33 +156,30 @@ class DirTileCode:
             for support in supports
         )
 
-    @property
-    def num_check_qubits(self):
-        data, _, _ = self.build_checks()
-        return len(data)
+    def distance(self, pauli: str | None = None, exact: bool = False, backend: str = "gap", num_trials: int = 500):        
+        pauli = pauli.upper() if pauli is not None else None
+        if exact:
+            return self.css_code.get_distance_exact(pauli=pauli)
+        else:
+            return self.css_code.get_distance_bound(pauli=pauli, backend=backend, num_trials=num_trials)
 
-    @property
-    def num_logical_qubits(self):
-        css_code = self.to_css_code()
-        rank = css_code.rank
-        return self.num_check_qubits - rank
+    def summary(self, visualize : bool=False, exact: bool=False, backend : str="gap", num_trials : int=500):
+        if visualize:
+            plot_x_tile(self)
+            plot_z_tile(self)
+            plot_anchors(self)
+            plot_support_before_prune(self)
+            plot_support_after_prune(self)
+        
+        d = self.distance(exact=exact, backend=backend, num_trials=num_trials)
+        d_x = self.distance(pauli="X", exact=exact, backend=backend, num_trials=num_trials)
+        d_z = self.distance(pauli="Z", exact=exact, backend=backend, num_trials=num_trials)
 
-    def to_css_code(self):
-        h_x, h_z = self.parity_check_matrices()
-        return CSSCode(code_x=h_x, code_z=h_z)
+        if exact:
+            print(f"Exact distance.")
+        else:
+            print(f"Bounded distance, backend={backend}, num_trials={num_trials}")
 
-    @property
-    def distance_exact(self):
-        css_code = self.to_css_code()
-        return css_code.get_distance_exact()
-
-    @property
-    def distance_x(self):
-        css_code = self.to_css_code()
-        return css_code.get_distance_exact("X")
-
-    @property
-    def distance_z(self):
-        css_code = self.to_css_code()
-        return css_code.get_distance_exact("Z")
-    
+        print("Distance d  :", d)
+        print("Distance d_x:", d_x)
+        print("Distance d_z:", d_z)
