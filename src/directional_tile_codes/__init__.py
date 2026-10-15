@@ -11,3 +11,4 @@ from .visualize import (
     print_visualization_summary,
     plot_logical_operator,
 )
+from .physical import Layout

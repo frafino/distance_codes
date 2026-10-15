@@ -189,6 +189,7 @@ class DirTileCode:
     def summary(self, visualize : bool=False, exact: bool=False, backend : str="gap", num_trials : int=500):
         if visualize:
             plot_x_tile(self)
+            plt.show()
             plot_z_tile(self)
             plot_anchors(self)
             plot_support_before_prune(self)
