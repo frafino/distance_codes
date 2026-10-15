@@ -20,26 +20,29 @@ class Tile():
         self.word = word
 
     def get_x_edges(self) -> tuple[tuple[Edge, ...], Vertex]:
-        return self.word.get_x_edges(), Vertex(0, 0)
+        return self.word.get_x_walk()
 
     def mutual_z_edges(self) -> tuple[Edge, ...]:
         c = 2 * (self.B - 1)
         x_edges, _ = self.get_x_edges()
         return tuple(Edge(Vertex(c - e.origin.x, c - e.origin.y), e.orientation.opposite) for e in x_edges)
-
-    def get_z_edges(self) -> tuple[tuple[Edge, ...], Vertex]:
-        dual = self.word.get_z_edges()
-        target = self.mutual_z_edges()
-        offset = Vertex(min(e.origin.x for e in target) - min(e.origin.x for e in dual),
-                        min(e.origin.y for e in target) - min(e.origin.y for e in dual))
-        check = Vertex(1, -1)
-        return tuple(e.translated(offset) for e in dual), check.add(offset)
     
     def get_edges_check(self) -> tuple[tuple[Edge, ...], Vertex]:
         if self.type is TileType.X:
             return self.get_x_edges()
         else:
             return self.get_z_edges()
+
+    def get_z_edges(self) -> tuple[tuple[Edge, ...], Vertex]:
+        dual, start = self.word.get_z_walk()
+        target = self.mutual_z_edges()
+
+        offset = Vertex(
+            min(e.origin.x for e in target) - min(e.origin.x for e in dual),
+            min(e.origin.y for e in target) - min(e.origin.y for e in dual),
+        )
+
+        return (tuple(edge.translated(offset) for edge in dual), start.add(offset))
 
     @cached_property
     def edges(self) -> tuple[Edge, ...]:

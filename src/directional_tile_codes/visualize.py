@@ -525,7 +525,7 @@ def plot_support_after_prune(
     if ax is None:
         _, ax = plt.subplots(figsize=(10, 10))
 
-    data, x_checks, z_checks = code.checks
+    data, x_checks, z_checks = code.parity_checks
 
     x_support = _union_support(x_checks)
     z_support = _union_support(z_checks)
@@ -582,7 +582,7 @@ def plot_support_after_prune(
 
 def print_visualization_summary(code):
     before_x, before_z = checks_before_prune(code)
-    data, after_x, after_z = code.checks
+    data, after_x, after_z = code.parity_checks
 
     print(f"layout edges:           {len(code.layout)}")
     print(f"X checks before prune:  {len(before_x)}")

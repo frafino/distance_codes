@@ -101,7 +101,7 @@ class DirTileCode:
 
     @cached_property
     def parity_check_matrices(self):
-        data, x_checks, z_checks = self.checks
+        data, x_checks, z_checks = self.parity_checks
         indices = {edge: i for i, edge in enumerate(data)}
 
         def matrix(checks):
@@ -148,7 +148,7 @@ class DirTileCode:
 
     @property
     def num_data_qubits(self):
-        data, _, _ = self.checks
+        data, _, _ = self.parity_checks
         return len(data)
 
     @property
@@ -158,7 +158,7 @@ class DirTileCode:
 
     @cached_property
     def logical_ops(self):
-        data, _, _ = self.checks
+        data, _, _ = self.parity_checks
         logicals = np.asarray(self.css_code.get_logical_ops())
         n = len(data)
 

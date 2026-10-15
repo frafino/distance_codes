@@ -24,34 +24,56 @@ class DirectionalWord:
         inverse_word = tuple(direction.opposite for direction in reversed(self.word))
         return DirectionalWord(inverse_word)
 
-    def get_x_edges(self) -> tuple[Edge, ...]:
-        x_edges = []
-        current_vertex = Vertex(0, 0)
+    def get_x_walk(self) -> tuple[tuple[Edge, ...], Vertex]:
+        start = Vertex(0, 0)
+        current_vertex = start
+        edges = []
 
         for direction in self.word:
             next_vertex = current_vertex.move(direction)
-            edge = Edge.between(current_vertex, next_vertex)
-            x_edges.append(edge)
+            edges.append(Edge.between(current_vertex, next_vertex))
             current_vertex = next_vertex
 
-        offset = Vertex(-min(edge.origin.x for edge in x_edges), -min(edge.origin.y for edge in x_edges))
+        offset = Vertex(
+            -min(edge.origin.x for edge in edges),
+            -min(edge.origin.y for edge in edges),
+        )
 
-        return tuple([edge.translated(offset) for edge in x_edges])
+        return (
+            tuple(edge.translated(offset) for edge in edges),
+            start.add(offset),
+        )
+
+    def get_z_walk(self) -> tuple[tuple[Edge, ...], Vertex]:
+        start = Vertex(1, -1)
+        current_vertex = start
+        edges = []
+
+        for direction in self.word:
+            next_vertex = current_vertex.move(direction)
+            dual_edge = Edge.between(current_vertex, next_vertex)
+            edges.append(dual_edge.perpendicular())
+            current_vertex = next_vertex
+
+        offset = Vertex(
+            -min(edge.origin.x for edge in edges),
+            -min(edge.origin.y for edge in edges),
+        )
+
+        return (
+            tuple(edge.translated(offset) for edge in edges),
+            start.add(offset),
+        )
+
+
+    def get_x_edges(self) -> tuple[Edge, ...]:
+        edges, _ = self.get_x_walk()
+        return edges
+
 
     def get_z_edges(self) -> tuple[Edge, ...]:
-        z_edges = []
-        current_vertex = Vertex(1, -1)
-        
-        for direction in self.word:
-            next_vertex = current_vertex.move(direction)
-            edge = Edge.between(current_vertex, next_vertex)
-            edge = Edge.perpendicular(edge)
-            z_edges.append(edge)
-            current_vertex = next_vertex
-
-        offset = Vertex(-min(edge.origin.x for edge in z_edges), -min(edge.origin.y for edge in z_edges))
-
-        return tuple([edge.translated(offset) for edge in z_edges])
+        edges, _ = self.get_z_walk()
+        return edges
     
     @property
     def B(self):

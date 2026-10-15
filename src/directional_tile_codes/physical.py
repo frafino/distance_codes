@@ -22,5 +22,9 @@ class Layout():
         self.space = code.empty_mask()
         self.x_checks = code.x_check_qubits
         self.z_checks = code.z_check_qubits
-
-        
+        self.word = code.word
+        # Create layout of data and check qubits
+        # Add routing qubits
+    
+    def syndrom_extraction(self):
+        # Follow algorithm 1 to create circuit, use stim 
