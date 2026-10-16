@@ -80,12 +80,13 @@ class Layout:
         for loc, qubit in self.qubits.items():
             circuit.append("QUBIT_COORDS", [qubit], [loc.x, loc.y])
 
+        # Reset routing qubits
         for loc, site in locations.items():
             if site.type is SiteType.ROUTING:
                 circuit.append("R", [self.qubits[loc]])
 
         for round_index in range(rounds):
-            # Initialize Cx and Cz
+            # Reset check qubits
             for loc, site in locations.items():
                 if site.type is SiteType.X_CHECK:
                     circuit.append("RX", [self.qubits[loc]])
@@ -103,23 +104,39 @@ class Layout:
                     first_type = locations[first].type
                     second_type = locations[second].type
 
+                    # Apply CXSWAP between X_CHECK-DATA and Z-CHECK-DATA
                     if second_type is SiteType.DATA and first_type is SiteType.X_CHECK:
                         circuit.append("CXSWAP", [q1, q2])
                     elif second_type is SiteType.DATA and first_type is SiteType.Z_CHECK:
                         circuit.append("CXSWAP", [q2, q1])
+                    # Apply SWAP between ROUTING-DATA and ROUTING-CHECK
                     else:
                         circuit.append("SWAP", [q1, q2])
 
+                # Update locations's types
                 for first, second in operations:
                     locations[first], locations[second] = (locations[second], locations[first])
                 circuit.append("TICK")
 
+            # Measure X_CHECK and Z_CHECK
             positions = {site: loc for loc, site in locations.items()}
             for site in self.checks:
                 gate = "MX" if site.type is SiteType.X_CHECK else "M"
                 circuit.append(gate, [self.qubits[positions[site]]])
+
+            # Add detectors
+            num_checks = len(self.checks)
+            if round_index > 0:
+                for j in range(num_checks):
+                    circuit.append(
+                        "DETECTOR",
+                        [
+                            stim.target_rec(j - num_checks),
+                            stim.target_rec(j - 2 * num_checks),
+                        ],
+                    )
+
             circuit.append("TICK")
 
-        # Physical qubit IDs stay fixed; this records where their states ended.
         self.final_locations = locations
         return circuit
