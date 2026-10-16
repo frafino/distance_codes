@@ -5,6 +5,7 @@ import stim
 from .geometry import Vertex
 from .directional_tile_code import DirTileCode
 
+# TODO: locations is confusing -> sites
 
 class SiteType(Enum):
     DATA = 0
