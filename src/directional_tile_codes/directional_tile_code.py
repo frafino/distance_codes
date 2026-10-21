@@ -2,6 +2,7 @@ import numpy as np
 import galois
 from qldpc.codes import CSSCode
 from functools import cached_property
+from qldpc.objects import Pauli
 
 from .directional_word import DirectionalWord
 from .tile import Tile, TileType
@@ -15,7 +16,7 @@ from .visualize import (
 )
 
 
-class DirTileCode:
+class DirectionalTileCode:
     def __init__(self, M: int, N: int, word: DirectionalWord):
         self.M = M
         self.N = N
@@ -180,7 +181,10 @@ class DirTileCode:
         )
 
     def distance(self, pauli: str | None = None, exact: bool = False, backend: str = "gap", num_trials: int = 500):        
-        pauli = pauli.upper() if pauli is not None else None
+        pauli = None if pauli is None else {
+            "X": Pauli.X,
+            "Z": Pauli.Z,
+        }[pauli.upper()]
         if exact:
             return self.css_code.get_distance_exact(pauli=pauli)
         else:
@@ -189,7 +193,6 @@ class DirTileCode:
     def summary(self, visualize : bool=False, exact: bool=False, backend : str="gap", num_trials : int=500):
         if visualize:
             plot_x_tile(self)
-            plt.show()
             plot_z_tile(self)
             plot_anchors(self)
             plot_support_before_prune(self)

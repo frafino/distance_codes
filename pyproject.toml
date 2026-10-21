@@ -12,7 +12,8 @@ dependencies = [
     "matplotlib",
     "qldpc",
     "galois",
-    "networkx"
+    "networkx",
+    "stim",
 ]
 
 [tool.setuptools.packages.find]

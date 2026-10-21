@@ -1,5 +1,5 @@
 from .directional_word import DirectionalWord
-from .directional_tile_code import DirTileCode
+from .directional_tile_code import DirectionalTileCode
 from .geometry import Vertex, Edge, Direction, Orientation
 from .tile import Tile, TileType
 from .visualize import (
@@ -12,3 +12,4 @@ from .visualize import (
     plot_logical_operator,
 )
 from .physical import Layout
+from .physical import Layout, DirectionalSyndromeMeasurement
