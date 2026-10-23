@@ -11,5 +11,4 @@ from .visualize import (
     print_visualization_summary,
     plot_logical_operator,
 )
-from .physical import Layout
-from .physical import Layout, DirectionalSyndromeMeasurement
+from .physical import PhysicalLayout, DirectionalSyndromeMeasurement

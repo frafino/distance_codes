@@ -1,0 +1,47 @@
+INTEGRATION
+0. What's needed to call this directly
+    def get_memory_experiment(
+        code: codes.QuditCode | codes.ClassicalCode,
+        basis: PauliXZLike | None = Pauli.X,
+        num_rounds: int = 1,
+        *,
+        noise_model: NoiseModel | None = None,
+        qubit_ids: QubitIDs | None = None,
+        syndrome_measurement_strategy: SyndromeMeasurementStrategy = _DEFAULT_STRATEGY,
+    ) -> stim.Circuit:
+
+    (1) code
+    (2) QubitIDs
+    (3) syndrome_measurement_strategy
+
+1. Create an instance of class CSSCode(QuditCode) [common.py] --> added method css_code() to DirectionalTileCode
+
+2. QubitIDs [bookkeeping.py]: used to identify data, check, ancilla qubits
+    - to build it from code
+        def from_code(
+            code: codes.QuditCode,
+            *,
+            num_ancillas: int = 0,
+            num_references: int = 0,
+            shift: int = 0,
+        ) -> QubitIDs:
+
+        - num_ancillas=len(self.routing_positions)
+    - validate it in the SyndromeMeasurementStrategy
+        def validated(qubit_ids: QubitIDs, code: codes.QuditCode) -> QubitIDs
+
+3. Create class DirectionalSyndromeMeasurement, child of SyndromeMeasurementStrategy [memory/syndrome_measurement.py]
+    - problem: get_memory_experiment() assumes that the QubitIDs remain the same after syndrom extraction 
+    --> need to consider round = forward + backward
+    - create method 
+        def get_circuit(
+            self, code: codes.QuditCode, qubit_ids: QubitIDs | None = None
+        ) -> tuple[stim.Circuit, MeasurementRecord]:
+        
+        - stim.Circuit: modify my circuit so that it performs only 1 round (forward and backward)
+        - MeasurementRecord [bookkeeping.py]: 
+            class Record(Mapping[Hashable, list[int]]):
+                def __init__(self, initial_record: Mapping[Hashable, Iterable[int] | int] | None = None)
+            class MeasurementRecord(Record):
+
+            - need to create record in syndrom_extraction(): dict[check_id] = [measurement_index]

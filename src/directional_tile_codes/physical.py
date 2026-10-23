@@ -26,7 +26,7 @@ class Site:
     type: SiteType
 
 
-class Layout:
+class PhysicalLayout:
     def __init__(self, code: DirectionalTileCode):
         self.code = code
         self.word = code.word
@@ -89,15 +89,12 @@ class Layout:
             )
         )
     
-    def syndrom_extraction(self, qubit_ids: QubitIDs, include_coordinates: bool = True) -> tuple[stim.Circuit, MeasurementRecord]:
+    def syndrom_extraction(self, qubit_ids: QubitIDs | None = None) -> tuple[stim.Circuit, MeasurementRecord]:
         circuit = stim.Circuit()
         sites = self.sites.copy()
+        qubit_ids = self.get_qubit_ids() if qubit_ids is None else qubit_ids
         physical_ids = self.position_to_id(qubit_ids) # dict[vertex] = id
         record: dict[object, list[int]] = {}
-
-        if include_coordinates:
-            for pos, qubit_id in physical_ids.items():
-                circuit.append("QUBIT_COORDS", [qubit_id], [pos.x, pos.y])
 
         for pass_index, word in enumerate((self.word, self.word.inverse())):
             # Reset routing qubits
@@ -154,18 +151,20 @@ class Layout:
 
 
 class DirectionalSyndromeMeasurement(SyndromeMeasurementStrategy):
-    def __init__(self, code: DirectionalTileCode, *, include_coordinates: bool = False):
-        self.layout = Layout(code)
-        self.include_coordinates = include_coordinates
+    rounds_per_call = 2
+
+    def __init__(self, code: DirectionalTileCode):
+        self.layout = PhysicalLayout(code)
 
     def get_qubit_ids(self, shift: int = 0) -> QubitIDs:
         return self.layout.get_qubit_ids(shift=shift)
 
     @restrict_to_qubits
     def get_circuit(self, code: codes.QuditCode, qubit_ids: QubitIDs | None = None) -> tuple[stim.Circuit, MeasurementRecord]:
+        # Possible mismatch of the measurement indices or qubit indices
         hx, hz = self.layout.code.parity_check_matrices
-        # If this fails there is a mismatch of the measurement indices or qubit indices
         if not (np.array_equal(code.get_matrix(Pauli.X), hx) and np.array_equal(code.get_matrix(Pauli.Z), hz)):
             raise ValueError("CSS matrices do not match this layout's ordered checks and data")
+
         qubit_ids = QubitIDs.validated(self.get_qubit_ids() if qubit_ids is None else qubit_ids, code)
-        return self.layout.syndrom_extraction(qubit_ids, include_coordinates=self.include_coordinates)
+        return self.layout.syndrom_extraction(qubit_ids)
