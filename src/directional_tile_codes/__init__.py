@@ -11,4 +11,4 @@ from .visualize import (
     print_visualization_summary,
     plot_logical_operator,
 )
-from .physical import PhysicalLayout, DirectionalSyndromeMeasurement
+from .physical import CheckRoute, Gate, PhysicalLayout, DirectionalSyndromeMeasurement, SiteType

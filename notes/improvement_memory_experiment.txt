@@ -1,0 +1,51 @@
+Improve memory experiment:
+    1. normalize per round per logical bit
+        k : logical qubits
+        R : rounds
+        E : shots with errors
+        N : shots
+        p_L : probability of error of each qubit (assumed to be the same)
+
+        p_shot = E/N
+        P(no failure for k logical qubit over R rounds) = (1 - p_L)^{Rk}
+        p_shot = P(at least 1 failure for k logical qubit over R rounds) = 1 - (1 - p_L)^{Rk}
+        p_L = 1 - (1 - p_shot)^{1/{kR}}
+
+    2. change gates
+    3. check decoding strategy used by the authors --> VibeLSD, found bp_lsd 
+        "we sample up to 10 million shots, terminating early once 30 logical errors have been observed. 
+        Decoding is performed with VibeLSD [67], which performs a parallel ensemble of serial min-sum 
+        schedules with localised statistics post-processing on unconverged shots [68]."
+    4. improve decoding
+        - tesseract decoder
+        - relay-bp 
+    5. routing optimization --> started implementing route window shortenining (1/3), terminal, trace pruning
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+- BP: estimates which errors are more likely.
+- OSD (Ordered Statistics Decoding): uses those estimates to find a correction that satisfies the syndrome exactly.
+- LSD (Localized Statistics Decoding): identify relatively small regions associated with errors and solve local systems.
+- Relay-BP: Improve the iterative message-passing procedure so that it can find good corrections despite cycles and symmetries.
+- Tesseract: searches for combinations of error mechanisms whose combined detector effect matches the observed syndrome.
+Its objective is to identify a low-cost, highly probable error configuration. Graph search with techniques including A*, Dijkstra-style search, beam-search heuristics, and pruning.
