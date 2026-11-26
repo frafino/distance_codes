@@ -30,12 +30,13 @@ class DirectionalTileCode:
         self.padding = self.B - 1
         self.anchor_shape = (self.M + 2 * self.padding, self.N + 2 * self.padding)
 
-    # Layout definition
     def empty_mask(self):
+        """Return an all-False anchor mask."""
         return np.zeros(self.anchor_shape, dtype=bool)
     
     @cached_property
     def bulk_mask(self):
+        """Anchor mask of the M x N bulk region."""
         p = self.padding
         mask = np.zeros(self.anchor_shape, dtype=bool)
         mask[p:p + self.M, p:p + self.N] = True
@@ -44,6 +45,7 @@ class DirectionalTileCode:
 
     @cached_property
     def x_boundary_mask(self):
+        """Anchor mask of the left/right X boundaries."""
         p = self.padding
         mask = np.zeros(self.anchor_shape, dtype=bool)
         mask[p:p + self.M, :p] = True
@@ -53,6 +55,7 @@ class DirectionalTileCode:
 
     @cached_property
     def z_boundary_mask(self):
+        """Anchor mask of the top/bottom Z boundaries."""
         p = self.padding
         mask = np.zeros(self.anchor_shape, dtype=bool)
         mask[:p, p:p + self.N] = True
@@ -62,20 +65,23 @@ class DirectionalTileCode:
 
     @cached_property
     def x_anchor_mask(self):
+        """Anchor mask for X checks (bulk and X boundaries)."""
         return self.bulk_mask | self.x_boundary_mask
 
     @cached_property
     def z_anchor_mask(self):
+        """Anchor mask for Z checks (bulk and Z boundaries)."""
         return self.bulk_mask | self.z_boundary_mask
 
     @cached_property
     def layout(self):
+        """Set of all edges in the patch layout."""
         width = self.M + self.B - 1
         height = self.N + self.B - 1
         return {Edge(Vertex(2 * x, 2 * y), orientation) for x in range(width) for y in range(height) for orientation in Orientation}
 
-    # Construction
     def tessellate(self, tile, mask, layout):
+        """Place the tile at each anchor of the mask and keep the edges inside the layout."""
         checks = {}
         for i, j in np.argwhere(mask):
             anchor = Vertex(2 * (int(i) - self.padding), 2 * (int(j) - self.padding))
@@ -84,6 +90,7 @@ class DirectionalTileCode:
         return checks
 
     def prune(self, checks, data):
+        """Restrict check supports to the data edges and drop empty checks."""
         return {
             anchor: tuple(edge for edge in support if edge in data)
             for anchor, support in checks.items()
@@ -92,6 +99,7 @@ class DirectionalTileCode:
 
     @cached_property
     def parity_checks(self):
+        """Return the ordered data edges and the pruned X and Z checks."""
         x_checks = self.tessellate(self.x_tile, self.x_anchor_mask, self.layout)
         z_checks = self.tessellate(self.z_tile, self.z_anchor_mask, self.layout)
         
@@ -102,6 +110,7 @@ class DirectionalTileCode:
 
     @cached_property
     def parity_check_matrices(self):
+        """Return the X and Z parity-check matrices over GF(2)."""
         data, x_checks, z_checks = self.parity_checks
         indices = {edge: i for i, edge in enumerate(data)}
 
@@ -123,12 +132,13 @@ class DirectionalTileCode:
 
     @cached_property
     def css_code(self):
+        """Return the qldpc CSSCode built from the parity-check matrices."""
         h_x, h_z = self.parity_check_matrices
         return CSSCode(code_x=h_x, code_z=h_z)
 
-    # Code parameters
     @cached_property
     def x_check_qubits(self):
+        """Positions of the X check qubits."""
         _, x_checks, _ = self.parity_checks
         return {
             anchor.add(self.x_tile.check_qubit)
@@ -137,6 +147,7 @@ class DirectionalTileCode:
 
     @cached_property
     def z_check_qubits(self):
+        """Positions of the Z check qubits."""
         _, _, z_checks = self.parity_checks
         return {
             anchor.add(self.z_tile.check_qubit)
@@ -145,20 +156,24 @@ class DirectionalTileCode:
 
     @cached_property
     def check_qubits(self):
+        """Positions of all check qubits."""
         return self.x_check_qubits | self.z_check_qubits
 
     @property
     def num_data_qubits(self):
+        """Number of data qubits n."""
         data, _, _ = self.parity_checks
         return len(data)
 
     @property
     def num_logical_qubits(self):
+        """Number of logical qubits k."""
         rank = self.css_code.rank
         return self.num_data_qubits - rank
 
     @cached_property
     def logical_ops(self):
+        """Supports of the logical operators as tuples of edges."""
         data, _, _ = self.parity_checks
         logicals = np.asarray(self.css_code.get_logical_ops())
         n = len(data)
@@ -181,6 +196,7 @@ class DirectionalTileCode:
         )
 
     def distance(self, pauli: str | None = None, exact: bool = False, backend: str = "gap", num_trials: int = 500):        
+        """Return the code distance (exact or upper bound), optionally for X or Z only."""
         pauli = None if pauli is None else {
             "X": Pauli.X,
             "Z": Pauli.Z,
@@ -191,6 +207,7 @@ class DirectionalTileCode:
             return self.css_code.get_distance_bound(pauli=pauli, backend=backend, num_trials=num_trials)
 
     def summary(self, visualize : bool=False, exact: bool=False, backend : str="gap", num_trials : int=500):
+        """Print the code distances and optionally plot the construction steps."""
         if visualize:
             plot_x_tile(self)
             plot_z_tile(self)

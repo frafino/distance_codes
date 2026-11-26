@@ -1,7 +1,5 @@
 from .geometry import Direction, Edge, Vertex
 
-# TODO: Check if it makes sense to have get_x_edges like in Tile.
-
 class DirectionalWord:
     def __init__(self, word):
         if isinstance(word, str):
@@ -18,13 +16,16 @@ class DirectionalWord:
 
     @property
     def weight(self) -> int:
+        """Number of steps in the word (stabilizer weight)."""
         return len(self.word)
 
     def inverse(self) -> "DirectionalWord":
+        """Return the reversed word with each direction flipped."""
         inverse_word = tuple(direction.opposite for direction in reversed(self.word))
         return DirectionalWord(inverse_word)
 
     def get_x_walk(self) -> tuple[tuple[Edge, ...], Vertex]:
+        """Return the X-string edges of the walk and its start vertex."""
         start = Vertex(0, 0)
         current_vertex = start
         edges = []
@@ -45,6 +46,7 @@ class DirectionalWord:
         )
 
     def get_z_walk(self) -> tuple[tuple[Edge, ...], Vertex]:
+        """Return the Z-string (dual) edges of the walk and its start vertex."""
         start = Vertex(1, -1)
         current_vertex = start
         edges = []
@@ -67,16 +69,19 @@ class DirectionalWord:
 
 
     def get_x_edges(self) -> tuple[Edge, ...]:
+        """Return the edges of the X string."""
         edges, _ = self.get_x_walk()
         return edges
 
 
     def get_z_edges(self) -> tuple[Edge, ...]:
+        """Return the edges of the Z string."""
         edges, _ = self.get_z_walk()
         return edges
     
     @property
     def B(self):
+        """Side length of the smallest box containing the X and Z strings."""
         edges = self.get_x_edges() + self.get_z_edges()
         max_hor = max(edge.origin.x for edge in edges)
         max_ver = max(edge.origin.y for edge in edges)

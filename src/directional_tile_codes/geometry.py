@@ -7,9 +7,11 @@ class Vertex:
     y: int
 
     def move(self, direction: "Direction") -> "Vertex":
+        """Return the vertex reached by one step in the given direction."""
         return Vertex(self.x + direction.dx, self.y + direction.dy)
 
     def add(self, vertex: "Vertex") -> "Vertex":
+        """Return the coordinate-wise sum of two vertices."""
         return Vertex(self.x + vertex.x, self.y + vertex.y)
 
 
@@ -21,14 +23,17 @@ class Direction(Enum):
 
     @property
     def dx(self) -> int:
+        """Horizontal displacement of the direction."""
         return self.value[0]
 
     @property
     def dy(self) -> int:
+        """Vertical displacement of the direction."""
         return self.value[1]
 
     @property
     def opposite(self) -> "Direction":
+        """Return the opposite direction."""
         return {
             Direction.N: Direction.S,
             Direction.S: Direction.N,
@@ -43,6 +48,7 @@ class Orientation(Enum):
 
     @property
     def opposite(self) -> "Orientation":
+        """Return the other orientation."""
         return Orientation(1 - self.value)
 
 
@@ -53,6 +59,7 @@ class Edge:
 
     @classmethod
     def between(cls, vertex_1: Vertex, vertex_2: Vertex) -> "Edge":
+        """Return the edge connecting two adjacent vertices."""
         dy = vertex_2.y - vertex_1.y
         
         if dy == 0:
@@ -64,16 +71,19 @@ class Edge:
 
     @property
     def middle(self) -> Vertex:
+        """Midpoint of the edge, where the data qubit sits."""
         if self.orientation is Orientation.HORIZONTAL:
             return Vertex(self.origin.x + 1, self.origin.y)
         else:
             return Vertex(self.origin.x, self.origin.y + 1)
 
     def translated(self, offset: Vertex) -> "Edge":
+        """Return the edge shifted by the given offset."""
         return Edge(self.origin.add(offset), self.orientation)
 
 
     def perpendicular(self) -> "Edge":
+        """Return the perpendicular edge crossing this one at its midpoint."""
         if self.orientation is Orientation.HORIZONTAL:
             origin = self.origin.add(Vertex(1, -1))
             orientation = Orientation.VERTICAL

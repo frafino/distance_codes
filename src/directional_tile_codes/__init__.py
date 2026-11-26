@@ -10,5 +10,6 @@ from .visualize import (
     plot_support_after_prune,
     print_visualization_summary,
     plot_logical_operator,
+    plot_edges,
 )
 from .physical import CheckRoute, Gate, PhysicalLayout, DirectionalSyndromeMeasurement, SiteType

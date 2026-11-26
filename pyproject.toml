@@ -5,17 +5,19 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "directional-tile-codes"
 version = "0.1.0"
+description = "Directional tile codes: construction and nearest-neighbour syndrome extraction."
 requires-python = ">=3.11"
 
 dependencies = [
     "numpy",
     "matplotlib",
-    "qldpc",
     "galois",
-    "networkx",
     "stim",
-    "pandas"
+    "qldpc>=0.4.1",
 ]
+
+[project.optional-dependencies]
+notebooks = ["pandas", "networkx", "scipy", "sinter", "relay-bp[stim]", "tesseract-decoder"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -21,8 +21,7 @@ class SiteType(Enum):
 CHECK_TYPES = (SiteType.X_CHECK, SiteType.Z_CHECK)
 
 @dataclass(eq=False, frozen=True)
-class Site: 
-    # movable identity with a fixed role, not a physical location 
+class Site:
     type: SiteType
 
 
@@ -35,6 +34,7 @@ class CheckRoute:
 
     @property
     def window(self) -> tuple[int, int]:
+        """Indices of the first and last data interaction in the route (end exclusive)."""
         hits = [i for i, site in enumerate(self.sites) if site is not None and site.type is SiteType.DATA]
         if not hits:
             raise ValueError("A stabilizer has empty data support")
@@ -50,6 +50,7 @@ class Gate:
 
     @property
     def kind(self) -> str:
+        """Type of interaction: check_data, check_routing or data_routing."""
         if self.first_site.type in CHECK_TYPES:
             if self.second_site.type is SiteType.DATA:
                 return "check_data"
@@ -99,11 +100,12 @@ class PhysicalLayout:
             self.shorten_windows()
 
     def add_site(self, pos: Vertex, type: SiteType):
+        """Add a site of the given type at a position."""
         self.sites[pos] = Site(type)
 
     @staticmethod
     def get_pairs(sites: Mapping[Vertex, Site], direction, active_checks=None):
-        # default, no optimization
+        """Return the interacting position pairs for one step in the given direction."""
         if active_checks is None: 
             active_checks = {s for s in sites.values() if s.type in CHECK_TYPES}
         
@@ -119,6 +121,7 @@ class PhysicalLayout:
         return sorted(pairs, key=lambda pair: (pair[0].x, pair[0].y))
 
     def trace_routes(self, routes):
+        """Simulate the forward and backward passes and return sites, routes, schedule and data signatures."""
         # Control: if check start overlaps with a data or check start
         initial = dict(zip(self.data_positions, self.data_sites, strict=True))
         for i, check in enumerate(self.check_sites):
@@ -193,11 +196,13 @@ class PhysicalLayout:
         return initial, traced, layers, signatures
 
     def apply(self, trace):
+        """Store a traced layout as the current sites, routes and schedule."""
         self.sites, self.routes, self.schedule, _ = trace
         self.check_positions = tuple(self.routes[i].positions[0] for i in range(len(self.check_sites)))
         self.routing_positions = tuple(sorted((p for p, s in self.sites.items() if s.type is SiteType.ROUTING), key=lambda p: (p.x, p.y)))
 
     def proposal(self, i, part):
+        """Return a route with the inactive prefix and/or suffix outside its data window removed."""
         r = self.routes[i]
         first, end = r.window
         active = r.active.copy()
@@ -213,6 +218,7 @@ class PhysicalLayout:
         return replace(r, positions=[start], active=active)
 
     def shorten_windows(self, order="shortest"):
+        """Greedily shorten check routes to reduce moves and routing qubits."""
         if order not in ("shortest", "index", "longest"):
             raise ValueError("order must be shortest, index, or longest")
         indices = list(self.routes)
@@ -271,6 +277,7 @@ class PhysicalLayout:
         return self
 
     def trajectories(self):
+        """Return the path of every site over the full schedule."""
         sites = self.sites.copy()
         paths = {site: [pos] for pos, site in sites.items()}
         for layer in self.schedule[0] + self.schedule[1]:
@@ -282,6 +289,7 @@ class PhysicalLayout:
         return paths
 
     def routing_counts(self):
+        """Return counts of qubits, moves and gates in the layout."""
         circuit, _ = self.syndrom_extraction()
         gates = {name: sum(len(op.targets_copy()) // 2 for op in circuit if op.name == name) for name in ("SWAP", "CXSWAP")}
         return dict(data=len(self.data_positions), checks=len(self.check_positions),
@@ -293,9 +301,11 @@ class PhysicalLayout:
                     **gates)
 
     def get_qubit_ids(self, shift: int = 0) -> QubitIDs:
+        """Return the qldpc QubitIDs for data, check and routing qubits."""
         return QubitIDs.from_code(self.code.css_code, num_ancillas=len(self.routing_positions), shift=shift)
 
     def position_to_id(self, qubit_ids: QubitIDs) -> dict[Vertex, int]:
+        """Map each physical position to its qubit index."""
         return dict(
             zip(
                 self.data_positions + self.check_positions + self.routing_positions,
@@ -305,6 +315,7 @@ class PhysicalLayout:
         )
     
     def syndrom_extraction(self, qubit_ids: QubitIDs | None = None) -> tuple[stim.Circuit, MeasurementRecord]:
+        """Build the stim circuit for one forward and one backward pass with its measurement record."""
         circuit = stim.Circuit()
         sites = self.sites.copy()
         qubit_ids = self.get_qubit_ids() if qubit_ids is None else qubit_ids
@@ -372,10 +383,12 @@ class DirectionalSyndromeMeasurement(SyndromeMeasurementStrategy):
         self.layout = PhysicalLayout(code, optimize=optimize)
 
     def get_qubit_ids(self, shift: int = 0) -> QubitIDs:
+        """Return the qldpc QubitIDs for data, check and routing qubits."""
         return self.layout.get_qubit_ids(shift=shift)
 
     @restrict_to_qubits
     def get_circuit(self, code: codes.QuditCode, qubit_ids: QubitIDs | None = None) -> tuple[stim.Circuit, MeasurementRecord]:
+        """Return the syndrome extraction circuit and measurement record for the memory experiment."""
         # Possible mismatch of the measurement indices or qubit indices
         hx, hz = self.layout.code.parity_check_matrices
         if not (np.array_equal(code.get_matrix(Pauli.X), hx) and np.array_equal(code.get_matrix(Pauli.Z), hz)):
